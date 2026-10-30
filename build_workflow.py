@@ -283,7 +283,7 @@ workflow = {
     "tags": [],
 }
 
-# Mock credentials so service nodes show no "credentials missing" warning
+# Credential templates (placeholder values) — replace with your own in n8n
 MOCK_CREDS = {
     "n8n-nodes-base.googleSheets": ("googleSheetsOAuth2Api", "mockGSheets00001", "Google Sheets (mock)",
                                     {"clientId": "mock-client-id.apps.googleusercontent.com", "clientSecret": "mock-secret"}),
@@ -298,7 +298,7 @@ for n in nodes:
         ctype, cid, cname, _ = MOCK_CREDS[n["type"]]
         n["credentials"] = {ctype: {"id": cid, "name": cname}}
 
-with open("mock-credentials.json", "w") as f:
+with open("credentials.example.json", "w") as f:
     json.dump([{"id": cid, "name": cname, "type": ctype, "data": data}
                for ctype, cid, cname, data in MOCK_CREDS.values()], f, indent=2)
 

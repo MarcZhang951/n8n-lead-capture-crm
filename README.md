@@ -1,177 +1,198 @@
-# Lead Capture + CRM (n8n)
+# Lead Capture + CRM Automation
 
-**Speed-to-lead: 5 min → 60 sec.**
+> Version: v1.0.0<br>
+> Author: MarcZhang
 
-An n8n workflow that captures inbound leads, validates and de-duplicates them against HubSpot, scores them with GPT-4o plus rule-based safety floors, and routes each lead to the right follow-up channel (Gmail, Slack, Google Sheets) within a minute of submission.
+Lead Capture + CRM is an n8n automation that turns every inbound lead into a qualified, CRM-synced, sales-ready opportunity in under a minute. It captures web form and ad submissions, validates and de-duplicates them against HubSpot, scores each lead with GPT-4o backed by deterministic business rules, and routes it to the right follow-up channel across Gmail, Slack and Google Sheets.
 
-![Reference](docs/reference.webp)
-
-> **Demo workflow.** Every node that needs an account uses mock credentials and pinned mock data. No real API is called and the workflow is meant to be viewed, not executed.
-
----
-
-## Purpose
-
-Inbound leads lose value fast: the longer a prospect waits for a reply, the lower the chance of a conversation. Manual triage (checking the form, searching the CRM, judging quality, pinging the right rep) typically takes 5+ minutes per lead. This workflow automates that whole chain so that:
-
-- **Incomplete submissions** are logged and the prospect is asked for the missing details automatically.
-- **Duplicate submissions** are logged without spamming sales or the prospect.
-- **Every valid lead is scored** consistently by an LLM, with deterministic business rules as a guardrail.
-- **The CRM stays clean**: new leads become HubSpot contacts, returning leads update the existing record.
-- **Sales reacts instantly**: hot leads get a personalised first-touch email plus a Slack alert with a *Claim* button; warm leads land in a shared queue; cold leads are archived for nurturing.
-
----
+**Speed-to-lead: 5 minutes → 60 seconds.**
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-    subgraph S1[1 · Capture & Normalize]
-        A[Form Lead In<br/>Webhook] --> B[Scoring Rules<br/>Set] --> C[Normalize Web<br/>Set]
-    end
-
-    subgraph S2[2 · Validate & Dedup]
-        C --> D{Validate Lead<br/>Switch}
-        D -- Missing Email --> E[Log Incomplete Lead<br/>Google Sheets]
-        D -- Missing Name --> F[Ask for Details<br/>Gmail]
-        D -- Valid Lead --> G[Search by Email<br/>HubSpot]
-        G --> H{Is Duplicate?<br/>IF}
-        H -- true --> I[Log Duplicate Lead<br/>Google Sheets]
-    end
-
-    subgraph S3[3 · AI + Rules Score]
-        H -- false --> J[Score Lead LLM<br/>OpenAI gpt-4o]
-        J --> K[Parse Score<br/>Code] --> L[Apply Rules Floor<br/>Code]
-    end
-
-    subgraph S4[4 · CRM + Outreach + Notify]
-        L --> M{Is New Contact?<br/>IF}
-        M -- true --> N[Create Contact<br/>HTTP → HubSpot]
-        M -- false --> O{Is Auto Followup?<br/>IF}
-        O -- true --> P[Update Contact<br/>HTTP → HubSpot]
-        O -- false --> Q[Prepare Update Diff<br/>Code] --> R[Notify Sales of Update<br/>HTTP → Slack]
-        N --> T{Tier Router<br/>Switch}
-        P --> T
-        T -- hot --> U[First-Touch Email<br/>Gmail]
-        T -- hot --> V[Notify #leads-hot<br/>HTTP → Slack]
-        T -- warm --> W[Notify #leads-queue<br/>Slack]
-        T -- cold --> X[Cold Lead<br/>Google Sheets]
-    end
+    Form[Web Form / Facebook Lead Ads] -->|HTTPS POST| Webhook[n8n Webhook]
+    Webhook --> Normalize[Rules + Normalize]
+    Normalize --> Validate{Validate}
+    Validate -->|incomplete| Sheets1[(Google Sheets)]
+    Validate -->|missing name| Gmail1[Gmail]
+    Validate -->|valid| HubSpotSearch[HubSpot Search]
+    HubSpotSearch --> Dedup{Duplicate?}
+    Dedup -->|yes| Sheets1
+    Dedup -->|no| LLM[OpenAI GPT-4o]
+    LLM --> Rules[Parse + Rules Floor]
+    Rules --> CRM[HubSpot Create / Update]
+    CRM --> Router{Tier Router}
+    Router -->|hot| Gmail2[Gmail First-Touch]
+    Router -->|hot| SlackHot[Slack #leads-hot]
+    Router -->|warm| SlackQueue[Slack #leads-queue]
+    Router -->|cold| Sheets2[(Google Sheets)]
 ```
 
-The workflow is a single linear pipeline with four stages. Each stage narrows the set of leads that continue and hands off a clean, enriched item to the next one:
+The workflow runs as a single event-driven pipeline in four stages. Each stage narrows the set of leads that continue and hands a clean, enriched item to the next one:
 
-| Stage | Input | Output | Services |
-|---|---|---|---|
+| Stage | Input | Output | Integrations |
+| --- | --- | --- | --- |
 | 1. Capture & Normalize | Raw form / ad payload | One unified lead object | Webhook |
-| 2. Validate & Dedup | Unified lead | Only complete, non-duplicate leads | HubSpot, Gmail, Google Sheets |
-| 3. AI + Rules Score | Valid lead | Lead with `score` (0-100) and `tier` (hot / warm / cold) | OpenAI |
-| 4. CRM + Outreach + Notify | Scored lead | CRM record + email + team notification | HubSpot, Gmail, Slack, Google Sheets |
+| 2. Validate & Dedup | Unified lead | Complete, non-duplicate leads | HubSpot, Gmail, Google Sheets |
+| 3. AI + Rules Score | Valid lead | `score` (0-100) and `tier` (hot / warm / cold) | OpenAI |
+| 4. CRM + Outreach + Notify | Scored lead | CRM record, outreach email, team alert | HubSpot, Gmail, Slack, Google Sheets |
 
-### Design decisions
+Key design decisions:
 
-- **Config at the top.** All thresholds live in one *Scoring Rules* node, so sales ops can tune the model without touching logic.
-- **LLM is advisory, rules are the floor.** GPT-4o gives nuance (intent, urgency), but a deterministic floor rule guarantees that an obviously strong lead (corporate email + budget + detailed message) is never scored as cold because of a bad generation.
-- **Fail soft.** If the LLM response cannot be parsed, the lead falls back to `warm / 50` so a human still sees it instead of it being dropped.
-- **Dedup before scoring.** Duplicates are filtered before the LLM call to save tokens and avoid double notifications.
-- **Every exit is logged.** Incomplete, duplicate and cold leads are all written to Google Sheets, so nothing disappears silently.
-- **HTTP Request where the native node falls short.** HubSpot contact create/update and Slack Block Kit messages (the *Claim* button) use raw API calls for full control over the payload.
+- **Centralised configuration.** All thresholds live in one *Scoring Rules* node, so sales ops can tune qualification without touching logic.
+- **LLM is advisory, rules are the floor.** GPT-4o captures intent and urgency; a deterministic floor guarantees that a strong lead (corporate domain + budget + detailed request) is never downgraded by a poor generation.
+- **Fail soft.** If the model response cannot be parsed, the lead falls back to `warm / 50` and still reaches a human.
+- **Dedup before scoring.** Duplicates are filtered before the LLM call to save tokens and prevent double notifications.
+- **No silent drops.** Incomplete, duplicate and cold leads are all written to Google Sheets for audit and nurturing.
+- **Raw API where control matters.** HubSpot contact writes and Slack Block Kit messages (with the *Claim* button) use HTTP Request nodes for full control over the payload.
 
----
+## Project structure
 
-## Node reference
+```text
+.
+├── lead-capture-crm.json      # n8n workflow export, ready to import
+├── credentials.example.json   # Credential templates for Gmail, Sheets, HubSpot, OpenAI, Slack
+├── build_workflow.py          # Workflow-as-code generator for both JSON files
+└── docs/
+    └── reference.webp         # Workflow canvas overview
+```
+
+The workflow is defined as code in `build_workflow.py`. Node parameters, connections, layout and credential bindings are generated from one source, which keeps changes reviewable in Git instead of hidden in the n8n editor.
+
+## Workflow nodes and components
 
 ### Stage 1 · Capture & Normalize
 
-| Node | n8n node | What it does |
-|---|---|---|
-| **Form Lead In** | Webhook (`POST /lead-in`) | Entry point. Receives submissions from the website form or Facebook Lead Ads (via a forwarder). Mock payload: *Alex Chen, Acme Corp, $30k budget*. |
-| **Scoring Rules (edit here)** | Set | Central configuration: `hotThreshold` (80), `warmThreshold` (50), `corpEmailFloor` (50), `budgetFloor` (10,000), `longMessageChars` (80). Passes the original payload through unchanged. |
-| **Normalize (Web)** | Set | Maps different source formats into one lead schema: `name`, `email`, `phone`, `company`, `budget`, `message`, `source`. Trims whitespace, lower-cases email and casts budget to a number. |
+| Node | n8n node | Purpose |
+| --- | --- | --- |
+| Form Lead In | Webhook (`POST /lead-in`) | Entry point for website form and Facebook Lead Ads submissions |
+| Scoring Rules (edit here) | Set | Central configuration: `hotThreshold` 80, `warmThreshold` 50, `corpEmailFloor` 50, `budgetFloor` 10,000, `longMessageChars` 80 |
+| Normalize (Web) | Set | Maps every source into one schema (`name`, `email`, `phone`, `company`, `budget`, `message`, `source`); trims values, lower-cases email, casts budget |
 
 ### Stage 2 · Validate & Dedup
 
-| Node | n8n node | What it does |
-|---|---|---|
-| **Validate Lead** | Switch (Rules mode) | Routes by data completeness into three outputs: *Missing Email*, *Missing Name*, *Valid Lead*. |
-| **Log Incomplete Lead** | Google Sheets – Append | Writes leads without an email to the `Incomplete` sheet. There is no way to contact them, so they are kept for manual review only. |
-| **Ask for Details** | Gmail – Send | Lead has an email but no name: sends a short, friendly reply asking for the missing details. |
-| **Search by Email** | HubSpot – Contact Search | Looks up the email in HubSpot to find an existing contact and its history. Mock result: no existing contact. |
-| **Is Duplicate?** | IF | Checks whether this is a repeated submission within a short window (e.g. a double-clicked form). |
-| **Log Duplicate Lead** | Google Sheets – Append | Duplicates are logged to the `Duplicates` sheet only. No CRM change, no email, no notification. |
+| Node | n8n node | Purpose |
+| --- | --- | --- |
+| Validate Lead | Switch (Rules) | Routes into *Missing Email*, *Missing Name* and *Valid Lead* |
+| Log Incomplete Lead | Google Sheets – Append | Records uncontactable submissions in the `Incomplete` sheet for manual review |
+| Ask for Details | Gmail – Send | Replies to leads without a name and asks for the missing details |
+| Search by Email | HubSpot – Contact Search | Looks up the email to find an existing contact and its history |
+| Is Duplicate? | IF | Detects repeated submissions within a short window |
+| Log Duplicate Lead | Google Sheets – Append | Logs duplicates only: no CRM change, no email, no alert |
 
 ### Stage 3 · AI + Rules Score
 
-| Node | n8n node | What it does |
-|---|---|---|
-| **Score Lead (LLM)** | OpenAI – Message a Model (`gpt-4o`) | Sends the normalized lead to GPT-4o with a qualification prompt. Returns JSON: `score` (0-100), `tier`, `reason`, and a draft first-touch `message`. Mock output: score 86, tier hot. |
-| **Parse Score** | Code | Parses the LLM JSON inside a try/catch. On failure it falls back to `score: 50, tier: warm`. Merges the AI fields back onto the lead object. |
-| **Apply Rules Floor** | Code | Applies deterministic business rules from *Scoring Rules*: a non-free-mail domain with budget ≥ floor and a detailed message is raised to at least `corpEmailFloor`. Then derives the final `tier` from the thresholds. |
+| Node | n8n node | Purpose |
+| --- | --- | --- |
+| Score Lead (LLM) | OpenAI – Message a Model (`gpt-4o`) | Qualifies the lead and returns JSON: `score`, `tier`, `reason` and a drafted first-touch `message` |
+| Parse Score | Code | Parses the model output inside try/catch with a `warm / 50` fallback and merges it onto the lead |
+| Apply Rules Floor | Code | Applies the corporate-email + budget + message-length floor, then derives the final `tier` from the thresholds |
 
 ### Stage 4 · CRM + Outreach + Notify
 
-| Node | n8n node | What it does |
-|---|---|---|
-| **Is New Contact?** | IF | `true` if the HubSpot search returned no contact. |
-| **Create Contact** | HTTP Request – `POST /crm/v3/objects/contacts` | Creates the HubSpot contact with name, email, phone, company, lead status `NEW` and `lead_score`. |
-| **Is Auto Followup?** | IF | For existing contacts: `true` if the contact is still in lifecycle stage `lead`, meaning automation may continue. `false` means a rep already owns the relationship. |
-| **Update Contact** | HTTP Request – `PATCH /crm/v3/objects/contacts/{id}` | Updates `lead_score` and lead status on the existing HubSpot contact, then continues to routing. |
-| **Prepare Update Diff** | Code | For contacts owned by a rep: compares submitted fields with the CRM record and builds a human-readable diff (e.g. `phone: old → new`). |
-| **Notify Sales of Update** | HTTP Request – Slack `chat.postMessage` | Posts the diff to `#leads-updates` so the owning rep knows the customer came back, without automated outreach interfering. |
-| **Tier Router** | Switch (Rules mode) | Routes by final `tier` into *hot*, *warm* and *cold* outputs. |
-| **First-Touch Email** | Gmail – Send | Hot leads only: sends the personalised email drafted by GPT-4o immediately. This is the speed-to-lead win. |
-| **Notify #leads-hot** | HTTP Request – Slack `chat.postMessage` | Hot leads only: posts an alert with a Block Kit *Claim* button so the first available rep takes ownership. |
-| **Notify #leads-queue** | Slack – Send Message | Warm leads: posts to a shared queue channel for follow-up during normal working hours. |
-| **Cold Lead** | Google Sheets – Append | Cold leads: archived in the `Cold` sheet for nurture campaigns, with no sales interruption. |
+| Node | n8n node | Purpose |
+| --- | --- | --- |
+| Is New Contact? | IF | Branches on whether HubSpot returned an existing contact |
+| Create Contact | HTTP Request – `POST /crm/v3/objects/contacts` | Creates the HubSpot contact with lead status `NEW` and `lead_score` |
+| Is Auto Followup? | IF | For existing contacts: continues automation only while the lifecycle stage is still `lead` |
+| Update Contact | HTTP Request – `PATCH /crm/v3/objects/contacts/{id}` | Refreshes `lead_score` and lead status on the existing record |
+| Prepare Update Diff | Code | For rep-owned contacts: builds a readable diff of changed fields (e.g. `phone: old → new`) |
+| Notify Sales of Update | HTTP Request – Slack `chat.postMessage` | Sends the diff to `#leads-updates` so the owning rep is informed without automated outreach |
+| Tier Router | Switch (Rules) | Routes by final tier into *hot*, *warm* and *cold* |
+| First-Touch Email | Gmail – Send | Hot leads: sends the personalised GPT-4o email immediately |
+| Notify #leads-hot | HTTP Request – Slack `chat.postMessage` | Hot leads: posts an alert with a Block Kit *Claim* button so the first available rep takes ownership |
+| Notify #leads-queue | Slack – Send Message | Warm leads: posts to the shared queue for same-day follow-up |
+| Cold Lead | Google Sheets – Append | Cold leads: archived in the `Cold` sheet for nurture campaigns |
 
-### Sticky notes
+Colour-coded sticky notes on the canvas label each stage and document alternative CRM targets (GoHighLevel via `n8n-nodes-base.highLevel`, Close.io via `httpRequest`).
 
-Four colour-coded sticky notes on the canvas label the stages: red *Capture & Normalize*, green *Validate & Dedup*, blue *AI + Rules Score*, grey *CRM + Outreach + Notify*. The capture note also lists alternative CRM sync targets (GoHighLevel via `n8n-nodes-base.highLevel`, Close.io via `httpRequest`).
+## Workflow screenshot
 
----
+![Lead Capture + CRM workflow](docs/reference.webp)
 
-## Mock data
+## Integrations
 
-| What | How it is mocked |
-|---|---|
-| Credentials | `mock-credentials.json` defines Gmail, Google Sheets, HubSpot, OpenAI and Slack credentials with fake values (`sk-mock-000000`, `xoxb-mock-000000`, …). They only exist so the nodes show no "credentials missing" warning. |
-| Service responses | 13 nodes have **pinned data** (Webhook, 3× Sheets, 2× Gmail, HubSpot, OpenAI, 4× HTTP Request, Slack). Open any node to see a realistic sample output. |
-| Spreadsheet / channels | Sheet ID `1MOCK-leads-sheet-id`, channels `#leads-hot`, `#leads-queue`, `#leads-updates`. |
+| Service | Used for | n8n credential type |
+| --- | --- | --- |
+| Webhook | Lead intake from forms and ad platforms | – |
+| OpenAI (GPT-4o) | Lead qualification and first-touch copy | `openAiApi` |
+| HubSpot | Contact search, create and update | `hubspotAppToken` |
+| Gmail | Detail requests and first-touch emails | `gmailOAuth2` |
+| Slack | Hot-lead alerts, warm queue, update notices | `slackApi` |
+| Google Sheets | Incomplete, duplicate and cold-lead logs | `googleSheetsOAuth2Api` |
 
-To make it real, replace the mock credentials with real ones, set the real Google Sheet ID, unpin the data and activate the workflow.
+## Local development
 
----
-
-## Files
-
-| File | Purpose |
-|---|---|
-| `lead-capture-crm.json` | The n8n workflow, ready to import |
-| `mock-credentials.json` | Fake credentials (no real secrets) |
-| `build_workflow.py` | Python generator that produces both JSON files |
-| `docs/reference.webp` | Reference diagram the workflow was built from |
-
-## Run locally
-
-```bash
-docker run -d --name n8n -p 5678:5678 -v n8n_data:/home/node/.n8n n8nio/n8n:latest
-```
-
-Open http://localhost:5678, create the owner account, then:
-
-```bash
-docker cp mock-credentials.json n8n:/tmp/creds.json
-docker cp lead-capture-crm.json n8n:/tmp/wf.json
-docker exec n8n n8n import:credentials --input=/tmp/creds.json
-docker exec n8n n8n import:workflow --input=/tmp/wf.json
-```
-
-Or import `lead-capture-crm.json` from the n8n UI (*Workflows → Import from File*) and create the credentials yourself.
-
-To regenerate the JSON after editing the generator:
+Python 3.9 or newer is required to regenerate the workflow.
 
 ```bash
 python3 build_workflow.py
 ```
 
-Tested with n8n 2.34.5.
+This writes `lead-capture-crm.json` and `credentials.example.json`. Edit thresholds, prompts, channels or sheet names in `build_workflow.py`, regenerate, then re-import.
+
+## Docker deployment
+
+1. Start n8n:
+
+   ```bash
+   docker run -d --name n8n -p 5678:5678 \
+     -e GENERIC_TIMEZONE=Asia/Shanghai \
+     -v n8n_data:/home/node/.n8n n8nio/n8n:latest
+   ```
+
+2. Open `http://localhost:5678` and create the owner account.
+
+3. Import the credential templates and the workflow:
+
+   ```bash
+   docker cp credentials.example.json n8n:/tmp/creds.json
+   docker cp lead-capture-crm.json n8n:/tmp/wf.json
+   docker exec n8n n8n import:credentials --input=/tmp/creds.json
+   docker exec n8n n8n import:workflow --input=/tmp/wf.json
+   ```
+
+4. In **Credentials**, fill in your OpenAI key, HubSpot private app token and Slack bot token, and connect the Gmail and Google Sheets OAuth apps.
+
+5. Set your Google Sheet ID in the three Sheets nodes and your Slack channels in the notify nodes, then activate the workflow.
+
+6. Point your form or Facebook Lead Ads forwarder at the production webhook URL:
+
+   ```text
+   https://<your-n8n-host>/webhook/lead-in
+   ```
+
+The workflow can also be imported from the n8n UI via *Workflows → Import from File*.
+
+## Operations
+
+```bash
+# View n8n logs
+docker logs -f n8n
+
+# Re-import after regenerating the workflow
+docker cp lead-capture-crm.json n8n:/tmp/wf.json
+docker exec n8n n8n import:workflow --input=/tmp/wf.json
+
+# Export the live version back to Git
+docker exec n8n n8n export:workflow --id=LeadCaptureCRM01 --output=/tmp/wf.json
+docker cp n8n:/tmp/wf.json lead-capture-crm.json
+
+# Stop n8n without deleting data
+docker stop n8n
+```
+
+Workflows, credentials and execution history are stored in the named `n8n_data` volume. Do not remove the volume unless the data is intentionally being deleted.
+
+## Security notes
+
+- Never commit real API keys, OAuth secrets or tokens; `credentials.example.json` contains placeholders only.
+- Use HubSpot private app tokens and Slack bot tokens with the minimum required scopes.
+- Run n8n behind HTTPS and set `N8N_ENCRYPTION_KEY` explicitly so credentials survive container rebuilds.
+- Protect the webhook with header authentication or a shared secret when exposing it publicly.
+- Back up the `n8n_data` volume before upgrading n8n.
+
+## Author
+
+Designed and developed by **MarcZhang**.
