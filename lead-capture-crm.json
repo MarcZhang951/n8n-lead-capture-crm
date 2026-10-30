@@ -4,7 +4,7 @@
   "active": false,
   "nodes": [
     {
-      "id": "03d4f607-551a-44ec-8d37-8e7565a1c9cf",
+      "id": "1e8b73ee-836f-4739-9b03-cb77c25eaaaa",
       "name": "Form Lead In",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
@@ -17,10 +17,10 @@
         "path": "lead-in",
         "options": {}
       },
-      "webhookId": "f3439e5a-5b79-40c2-8e52-ee6cddf2046b"
+      "webhookId": "ec77989d-6742-47c4-a668-426fa27faf71"
     },
     {
-      "id": "212a4167-e395-4589-a733-e499d7ca65f6",
+      "id": "a851916f-9f8c-46c5-a9d1-6590c924040c",
       "name": "Scoring Rules (edit here)",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.5,
@@ -32,31 +32,31 @@
         "assignments": {
           "assignments": [
             {
-              "id": "e3b54dfd-2a04-4bf6-be45-b76749907625",
+              "id": "06f12a15-f9a7-44dc-8cad-2bf34cf521f4",
               "name": "hotThreshold",
               "value": 80,
               "type": "number"
             },
             {
-              "id": "87c1806f-f61c-46ea-a21a-c3565a6df2c4",
+              "id": "f8c945db-af04-46b5-8eb9-e00f4284fe90",
               "name": "warmThreshold",
               "value": 50,
               "type": "number"
             },
             {
-              "id": "74751240-5014-45c0-ab39-10bf8a4a5fd7",
+              "id": "c73c79de-5cca-483d-8738-b61793c6813e",
               "name": "corpEmailFloor",
               "value": 50,
               "type": "number"
             },
             {
-              "id": "cf85f24d-eccc-43fb-bf29-e26f6ac7d86c",
+              "id": "f387b066-e388-4fb9-9bee-272a5b01bfc8",
               "name": "budgetFloor",
               "value": 10000,
               "type": "number"
             },
             {
-              "id": "e46ae851-c588-48ae-9973-b449358105a0",
+              "id": "0f7f561e-b6d8-4afe-82d6-71228f11c5af",
               "name": "longMessageChars",
               "value": 80,
               "type": "number"
@@ -68,7 +68,7 @@
       }
     },
     {
-      "id": "c8856df6-c553-4dd9-a3c3-cb44d8a44058",
+      "id": "d3ed63fd-c3ee-485a-a64f-b1e0064d35dd",
       "name": "Normalize (Web)",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.5,
@@ -80,43 +80,43 @@
         "assignments": {
           "assignments": [
             {
-              "id": "53bf17c1-e3b0-4f9e-b308-a2450a07d1c6",
+              "id": "0fdb8a79-b9d7-4aa6-8d4a-14a1fe1688d4",
               "name": "name",
               "value": "={{ ($json.body.name || '').trim() }}",
               "type": "string"
             },
             {
-              "id": "08033132-7a31-4586-b0cc-29c8e8898d65",
+              "id": "bbd2a591-3fcf-4154-9c0e-d5686aeb46e7",
               "name": "email",
               "value": "={{ ($json.body.email || '').trim().toLowerCase() }}",
               "type": "string"
             },
             {
-              "id": "5e0e905f-cd8a-468e-8000-932d393830ce",
+              "id": "641ee671-e2af-4610-a1df-b80a76fd006d",
               "name": "phone",
               "value": "={{ ($json.body.phone || '').trim() }}",
               "type": "string"
             },
             {
-              "id": "763a2409-1868-4dc1-95b9-8a595ec940f7",
+              "id": "1914ebed-01c0-4f17-ac1b-23f2df194d57",
               "name": "company",
               "value": "={{ $json.body.company }}",
               "type": "string"
             },
             {
-              "id": "d0fe73ab-81f3-422a-b263-a48011fdc7dc",
+              "id": "f9a0b5f8-aadb-4511-ad9e-3516efd2f274",
               "name": "budget",
               "value": "={{ Number($json.body.budget) || 0 }}",
               "type": "number"
             },
             {
-              "id": "4aeee03a-e1a4-4e23-b017-2ea19f65f88c",
+              "id": "a7b189ec-4acf-4fed-92c6-ccd53262d9f0",
               "name": "message",
               "value": "={{ $json.body.message }}",
               "type": "string"
             },
             {
-              "id": "733848e9-68f4-47f2-9629-c5ad76ab45a7",
+              "id": "44a5a236-baf5-43cf-b452-c626d1a75f5a",
               "name": "source",
               "value": "={{ $json.body.source || 'web_form' }}",
               "type": "string"
@@ -127,7 +127,7 @@
       }
     },
     {
-      "id": "5c6ec5e0-2d84-456d-9a10-c97aefae1c5c",
+      "id": "de21c425-33ef-4df5-a02a-89649b7f8120",
       "name": "Validate Lead",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4,
@@ -148,7 +148,7 @@
                 },
                 "conditions": [
                   {
-                    "id": "6b13c37e-5f4e-4000-bf86-e1fc3e4b66a9",
+                    "id": "b71d2e76-80f6-4437-877e-3d5e8e44b7fa",
                     "leftValue": "={{ $json.email }}",
                     "operator": {
                       "type": "string",
@@ -173,7 +173,7 @@
                 },
                 "conditions": [
                   {
-                    "id": "d00ce818-a815-4e64-8bdf-af2d3bf8cdfe",
+                    "id": "b6ad4f21-6730-43f3-84b5-e5cc33af8d65",
                     "leftValue": "={{ $json.name }}",
                     "operator": {
                       "type": "string",
@@ -198,7 +198,7 @@
                 },
                 "conditions": [
                   {
-                    "id": "d9a92ec0-22cc-4cb3-9803-c5b07d72a8ff",
+                    "id": "eb75c805-ad50-48ec-bcd8-1f9106273858",
                     "leftValue": "={{ $json.email }}",
                     "operator": {
                       "type": "string",
@@ -219,7 +219,7 @@
       }
     },
     {
-      "id": "7eb5e1c9-d694-4bfd-afdf-b3577117d1c7",
+      "id": "06e02e34-0c44-45db-b7df-fbeb66a06005",
       "name": "Log Incomplete Lead",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
@@ -255,7 +255,7 @@
       }
     },
     {
-      "id": "5480241e-698b-4bf6-a997-08fdf2e10fda",
+      "id": "b767cf46-00a9-4974-96da-88afaaf3f78d",
       "name": "Ask for Details",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.2,
@@ -278,7 +278,7 @@
       }
     },
     {
-      "id": "25f7bb44-069c-4ee3-857e-452bfc82fae2",
+      "id": "16fd4965-f092-4deb-acff-58d9dc0b6e65",
       "name": "Search by Email",
       "type": "n8n-nodes-base.hubspot",
       "typeVersion": 2.2,
@@ -313,7 +313,7 @@
       }
     },
     {
-      "id": "9a65c3d9-5596-40b6-80da-c9eb6a7dcafb",
+      "id": "af27eae7-9c98-4b38-96b1-d9d00265fcb1",
       "name": "Is Duplicate?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
@@ -331,7 +331,7 @@
           },
           "conditions": [
             {
-              "id": "8c6514a8-b47a-4294-9bf0-36d8e41623ad",
+              "id": "2b1368d2-9bf6-4296-8703-f40a3f22d9bf",
               "leftValue": "={{ $json.recentSubmission }}",
               "operator": {
                 "type": "boolean",
@@ -347,7 +347,7 @@
       }
     },
     {
-      "id": "8d94a6a1-e0df-4acc-aab2-15f6accecc98",
+      "id": "05b20e03-bb69-4ead-81ca-eef70f68f481",
       "name": "Log Duplicate Lead",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
@@ -383,7 +383,7 @@
       }
     },
     {
-      "id": "355c9430-72bb-42d3-96cf-734c23f3e6f3",
+      "id": "199a1450-49c2-4382-8527-65b594b2f89c",
       "name": "Score Lead (LLM)",
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 1.8,
@@ -422,7 +422,7 @@
       }
     },
     {
-      "id": "2df8a70e-3182-43df-a815-b9de71816ada",
+      "id": "0ecc6fc7-ee58-46ee-ac74-6005668fe72a",
       "name": "Parse Score",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -435,7 +435,7 @@
       }
     },
     {
-      "id": "bbdd3d8d-e02d-4043-96f7-ad83f82892d9",
+      "id": "e743e763-3688-4a05-9835-ab6c4dac488f",
       "name": "Apply Rules Floor",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -448,7 +448,7 @@
       }
     },
     {
-      "id": "8bb02cd7-66f7-4bdb-8d9f-2cb5d3626fee",
+      "id": "9cc67440-af67-480d-a505-e46a693d96fb",
       "name": "Is New Contact?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
@@ -466,7 +466,7 @@
           },
           "conditions": [
             {
-              "id": "abbbda18-57f3-4ff3-94fd-826e530c315e",
+              "id": "1d002c08-636a-4cb6-9b8a-78573473cefc",
               "leftValue": "={{ $('Search by Email').item.json.total }}",
               "operator": {
                 "type": "number",
@@ -481,7 +481,7 @@
       }
     },
     {
-      "id": "adef41f1-eff4-4ca9-b612-d2a1daf509e2",
+      "id": "d309bb29-5466-4736-8096-b89da68bbb74",
       "name": "Create Contact",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.5,
@@ -499,7 +499,7 @@
       }
     },
     {
-      "id": "a108cb5b-ea38-4724-a8a4-8ccdd7684bab",
+      "id": "62994c58-96a8-4978-b68e-ee58d456bed1",
       "name": "Is Auto Followup?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
@@ -517,7 +517,7 @@
           },
           "conditions": [
             {
-              "id": "567b5458-5224-4d3b-9d15-b9bd774f6baf",
+              "id": "84e1626d-0a6a-4f40-886c-93ea10c8e2b9",
               "leftValue": "={{ $('Search by Email').item.json.properties?.lifecyclestage }}",
               "operator": {
                 "type": "string",
@@ -532,7 +532,7 @@
       }
     },
     {
-      "id": "184e0485-7625-4b5a-9a03-3f2055d901ad",
+      "id": "ada74c9b-8f23-467b-92b8-0da8eed1c7a8",
       "name": "Update Contact",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.5,
@@ -541,7 +541,7 @@
         540
       ],
       "parameters": {
-        "method": "POST",
+        "method": "PATCH",
         "url": "=https://api.hubapi.com/crm/v3/objects/contacts/{{ $('Search by Email').item.json.id }}",
         "sendBody": true,
         "specifyBody": "json",
@@ -550,7 +550,7 @@
       }
     },
     {
-      "id": "78cf0ac4-553e-43df-896c-c29889403e8f",
+      "id": "1f01ab20-dfcc-4f09-89c3-9b15fac41bb7",
       "name": "Prepare Update Diff",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -563,7 +563,7 @@
       }
     },
     {
-      "id": "f3a52b2c-014c-4095-8ef6-218449b12b78",
+      "id": "9f582eb5-2c90-4fdc-8478-336eb4ebd5a9",
       "name": "Notify Sales of Update",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.5,
@@ -581,7 +581,7 @@
       }
     },
     {
-      "id": "45f2221c-539c-4950-a48e-0655bf4c497f",
+      "id": "d247b6ba-37f8-4d7f-860c-1a70efeb1a45",
       "name": "Tier Router",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4,
@@ -602,7 +602,7 @@
                 },
                 "conditions": [
                   {
-                    "id": "d9340ef7-3355-4f3a-9723-1af98aafa89b",
+                    "id": "b050a889-3c4f-44a0-8c21-d194469cee8f",
                     "leftValue": "={{ $json.tier }}",
                     "operator": {
                       "type": "string",
@@ -626,7 +626,7 @@
                 },
                 "conditions": [
                   {
-                    "id": "e62c8226-4f27-4f8a-9c85-9d0653acdcb5",
+                    "id": "387f0381-8846-45be-b076-6625e49bcf51",
                     "leftValue": "={{ $json.tier }}",
                     "operator": {
                       "type": "string",
@@ -650,7 +650,7 @@
                 },
                 "conditions": [
                   {
-                    "id": "b677992c-3575-4e1d-b663-293386c7bf6e",
+                    "id": "7bc6c486-fa5f-4dec-965c-85249373d8e5",
                     "leftValue": "={{ $json.tier }}",
                     "operator": {
                       "type": "string",
@@ -670,7 +670,7 @@
       }
     },
     {
-      "id": "6b59e649-7b47-4cfe-8950-fd668c81bacb",
+      "id": "b83aede0-9028-42c0-b2fe-81ad0c13fb10",
       "name": "First-Touch Email",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.2,
@@ -693,7 +693,7 @@
       }
     },
     {
-      "id": "24466865-52d7-4dce-bf4a-be143639c89e",
+      "id": "552f9e39-1bdf-429f-9cfa-b8c64f1d8f59",
       "name": "Notify #leads-hot",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.5,
@@ -711,7 +711,7 @@
       }
     },
     {
-      "id": "15776109-2f68-444a-85bd-7dc41a1e69fe",
+      "id": "a7dceffb-ddd6-4145-a76c-547caf802c0e",
       "name": "Notify #leads-queue",
       "type": "n8n-nodes-base.slack",
       "typeVersion": 2.6,
@@ -737,7 +737,7 @@
       }
     },
     {
-      "id": "5d8d4fa7-956a-42dc-8666-1f34c3999d68",
+      "id": "e0759ed7-c74c-427f-8b83-9aa7e51c0cb7",
       "name": "Cold Lead",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
@@ -773,7 +773,7 @@
       }
     },
     {
-      "id": "341874ea-528e-4919-94eb-c1932a73ed06",
+      "id": "f895c61e-bbbb-4a6e-8ad2-b6c46bea4c8a",
       "name": "Note Capture",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
@@ -789,7 +789,7 @@
       }
     },
     {
-      "id": "8a6ea9fc-9ba5-41a4-b913-49cafe12b7a8",
+      "id": "b6cb4ed7-c6e7-4f1f-9fa8-a97d3fb40191",
       "name": "Note Validate",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
@@ -805,7 +805,7 @@
       }
     },
     {
-      "id": "a691569d-067e-4ede-986e-4b04d65f2211",
+      "id": "bd494132-dc41-4bf9-8ed7-61db918f9c6f",
       "name": "Note AI",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
@@ -821,7 +821,7 @@
       }
     },
     {
-      "id": "2b0d59cd-3546-4cc4-ad31-baeba7684dfa",
+      "id": "861a6a92-488a-4d06-96d5-69e55c298d42",
       "name": "Note CRM",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,

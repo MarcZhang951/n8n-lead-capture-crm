@@ -60,9 +60,9 @@ def sheet(name, pos, tab, mock):
     }, mock)
 
 
-def http(name, pos, url, body, mock):
+def http(name, pos, url, body, mock, method="POST"):
     return node(name, "n8n-nodes-base.httpRequest", 4.5, pos, {
-        "method": "POST", "url": url,
+        "method": method, "url": url,
         "sendBody": True, "specifyBody": "json", "jsonBody": body, "options": {},
     }, mock)
 
@@ -192,7 +192,7 @@ node("Is Auto Followup?", "n8n-nodes-base.if", 2.3, (2240, 700), {
 
 http("Update Contact", (2460, 540), "=https://api.hubapi.com/crm/v3/objects/contacts/{{ $('Search by Email').item.json.id }}",
      "={\n  \"properties\": {\n    \"lead_score\": {{ $json.score }},\n    \"hs_lead_status\": \"OPEN\"\n  }\n}",
-     [{"id": "90210001", "updatedAt": "2026-10-30T08:00:00Z", "tier": "warm"}])
+     [{"id": "90210001", "updatedAt": "2026-10-30T08:00:00Z", "tier": "warm"}], method="PATCH")
 
 node("Prepare Update Diff", "n8n-nodes-base.code", 2, (2460, 820), {"jsCode": """const prev = $('Search by Email').item.json.properties || {};
 const lead = $json;
