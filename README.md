@@ -7,6 +7,10 @@ Lead Capture + CRM is an n8n automation that turns every inbound lead into a qua
 
 **Speed-to-lead: 5 minutes → 60 seconds.**
 
+## Demo video
+
+▶️ **[Watch the walkthrough on Loom](https://www.loom.com/share/7b6f14c0dffe421ea1251c34a527ebfa)**
+
 ## Architecture
 
 ```mermaid
