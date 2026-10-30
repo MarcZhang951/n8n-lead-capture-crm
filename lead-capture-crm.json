@@ -1,0 +1,1211 @@
+{
+  "id": "LeadCaptureCRM01",
+  "name": "Lead Capture + CRM",
+  "active": false,
+  "nodes": [
+    {
+      "id": "03d4f607-551a-44ec-8d37-8e7565a1c9cf",
+      "name": "Form Lead In",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lead-in",
+        "options": {}
+      },
+      "webhookId": "f3439e5a-5b79-40c2-8e52-ee6cddf2046b"
+    },
+    {
+      "id": "212a4167-e395-4589-a733-e499d7ca65f6",
+      "name": "Scoring Rules (edit here)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        220,
+        300
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e3b54dfd-2a04-4bf6-be45-b76749907625",
+              "name": "hotThreshold",
+              "value": 80,
+              "type": "number"
+            },
+            {
+              "id": "87c1806f-f61c-46ea-a21a-c3565a6df2c4",
+              "name": "warmThreshold",
+              "value": 50,
+              "type": "number"
+            },
+            {
+              "id": "74751240-5014-45c0-ab39-10bf8a4a5fd7",
+              "name": "corpEmailFloor",
+              "value": 50,
+              "type": "number"
+            },
+            {
+              "id": "cf85f24d-eccc-43fb-bf29-e26f6ac7d86c",
+              "name": "budgetFloor",
+              "value": 10000,
+              "type": "number"
+            },
+            {
+              "id": "e46ae851-c588-48ae-9973-b449358105a0",
+              "name": "longMessageChars",
+              "value": 80,
+              "type": "number"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      }
+    },
+    {
+      "id": "c8856df6-c553-4dd9-a3c3-cb44d8a44058",
+      "name": "Normalize (Web)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        440,
+        300
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "53bf17c1-e3b0-4f9e-b308-a2450a07d1c6",
+              "name": "name",
+              "value": "={{ ($json.body.name || '').trim() }}",
+              "type": "string"
+            },
+            {
+              "id": "08033132-7a31-4586-b0cc-29c8e8898d65",
+              "name": "email",
+              "value": "={{ ($json.body.email || '').trim().toLowerCase() }}",
+              "type": "string"
+            },
+            {
+              "id": "5e0e905f-cd8a-468e-8000-932d393830ce",
+              "name": "phone",
+              "value": "={{ ($json.body.phone || '').trim() }}",
+              "type": "string"
+            },
+            {
+              "id": "763a2409-1868-4dc1-95b9-8a595ec940f7",
+              "name": "company",
+              "value": "={{ $json.body.company }}",
+              "type": "string"
+            },
+            {
+              "id": "d0fe73ab-81f3-422a-b263-a48011fdc7dc",
+              "name": "budget",
+              "value": "={{ Number($json.body.budget) || 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "4aeee03a-e1a4-4e23-b017-2ea19f65f88c",
+              "name": "message",
+              "value": "={{ $json.body.message }}",
+              "type": "string"
+            },
+            {
+              "id": "733848e9-68f4-47f2-9629-c5ad76ab45a7",
+              "name": "source",
+              "value": "={{ $json.body.source || 'web_form' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "5c6ec5e0-2d84-456d-9a10-c97aefae1c5c",
+      "name": "Validate Lead",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        660,
+        300
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "6b13c37e-5f4e-4000-bf86-e1fc3e4b66a9",
+                    "leftValue": "={{ $json.email }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "empty",
+                      "singleValue": true
+                    },
+                    "rightValue": ""
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Missing Email"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "d00ce818-a815-4e64-8bdf-af2d3bf8cdfe",
+                    "leftValue": "={{ $json.name }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "empty",
+                      "singleValue": true
+                    },
+                    "rightValue": ""
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Missing Name"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "d9a92ec0-22cc-4cb3-9803-c5b07d72a8ff",
+                    "leftValue": "={{ $json.email }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    },
+                    "rightValue": ""
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Valid Lead"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "7eb5e1c9-d694-4bfd-afdf-b3577117d1c7",
+      "name": "Log Incomplete Lead",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        900,
+        100
+      ],
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "1MOCK-leads-sheet-id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Incomplete"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "mockGSheets00001",
+          "name": "Google Sheets (mock)"
+        }
+      }
+    },
+    {
+      "id": "5480241e-698b-4bf6-a997-08fdf2e10fda",
+      "name": "Ask for Details",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        900,
+        300
+      ],
+      "parameters": {
+        "sendTo": "={{ $json.email }}",
+        "subject": "Quick question about your request",
+        "emailType": "text",
+        "message": "Hi there,\n\nThanks for reaching out! Could you reply with your name so we can route you to the right person?\n\nBest,\nSales Team",
+        "options": {}
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "mockGmail0000001",
+          "name": "Gmail (mock)"
+        }
+      }
+    },
+    {
+      "id": "25f7bb44-069c-4ee3-857e-452bfc82fae2",
+      "name": "Search by Email",
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2.2,
+      "position": [
+        900,
+        500
+      ],
+      "parameters": {
+        "authentication": "appToken",
+        "operation": "search",
+        "filterGroupsUi": {
+          "filterGroupsValues": [
+            {
+              "filtersUi": {
+                "filterValues": [
+                  {
+                    "propertyName": "email|string",
+                    "value": "={{ $json.email }}"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {}
+      },
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "mockHubspot00001",
+          "name": "HubSpot (mock)"
+        }
+      }
+    },
+    {
+      "id": "9a65c3d9-5596-40b6-80da-c9eb6a7dcafb",
+      "name": "Is Duplicate?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1120,
+        500
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "8c6514a8-b47a-4294-9bf0-36d8e41623ad",
+              "leftValue": "={{ $json.recentSubmission }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "rightValue": ""
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "8d94a6a1-e0df-4acc-aab2-15f6accecc98",
+      "name": "Log Duplicate Lead",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1340,
+        320
+      ],
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "1MOCK-leads-sheet-id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Duplicates"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "mockGSheets00001",
+          "name": "Google Sheets (mock)"
+        }
+      }
+    },
+    {
+      "id": "355c9430-72bb-42d3-96cf-734c23f3e6f3",
+      "name": "Score Lead (LLM)",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        1340,
+        500
+      ],
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o",
+          "cachedResultName": "GPT-4O"
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are a B2B lead qualification assistant. Return JSON: {score (0-100), tier (hot|warm|cold), reason, message}."
+            },
+            {
+              "content": "=Name: {{ $('Normalize (Web)').item.json.name }}\nEmail: {{ $('Normalize (Web)').item.json.email }}\nCompany: {{ $('Normalize (Web)').item.json.company }}\nBudget: {{ $('Normalize (Web)').item.json.budget }}\nMessage: {{ $('Normalize (Web)').item.json.message }}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "credentials": {
+        "openAiApi": {
+          "id": "mockOpenAi000001",
+          "name": "OpenAI (mock)"
+        }
+      }
+    },
+    {
+      "id": "2df8a70e-3182-43df-a815-b9de71816ada",
+      "name": "Parse Score",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        500
+      ],
+      "parameters": {
+        "jsCode": "// Try/catch fallback: warm / 50+\nconst lead = $('Normalize (Web)').item.json;\nlet ai;\ntry {\n  ai = $json.message.content;\n  if (typeof ai === 'string') ai = JSON.parse(ai);\n} catch (e) {\n  ai = { score: 50, tier: 'warm', reason: 'LLM parse failed - fallback', message: '' };\n}\nreturn [{ json: { ...lead, score: Number(ai.score) || 50, reason: ai.reason, aiMessage: ai.message } }];"
+      }
+    },
+    {
+      "id": "bbdd3d8d-e02d-4043-96f7-ad83f82892d9",
+      "name": "Apply Rules Floor",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1780,
+        500
+      ],
+      "parameters": {
+        "jsCode": "// Floor rule: corp email + budget + long msg\nconst rules = $('Scoring Rules (edit here)').item.json;\nconst lead = $json;\nconst freeMail = /@(gmail|yahoo|hotmail|outlook|qq|163)\\./i.test(lead.email);\nlet score = lead.score;\nif (!freeMail && lead.budget >= rules.budgetFloor && (lead.message || '').length >= rules.longMessageChars) {\n  score = Math.max(score, rules.corpEmailFloor);\n}\nconst tier = score >= rules.hotThreshold ? 'hot' : score >= rules.warmThreshold ? 'warm' : 'cold';\nreturn [{ json: { ...lead, score, tier } }];"
+      }
+    },
+    {
+      "id": "8bb02cd7-66f7-4bdb-8d9f-2cb5d3626fee",
+      "name": "Is New Contact?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2000,
+        500
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "abbbda18-57f3-4ff3-94fd-826e530c315e",
+              "leftValue": "={{ $('Search by Email').item.json.total }}",
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              },
+              "rightValue": 0
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "adef41f1-eff4-4ca9-b612-d2a1daf509e2",
+      "name": "Create Contact",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        2240,
+        340
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.hubapi.com/crm/v3/objects/contacts",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"properties\": {\n    \"email\": \"{{ $json.email }}\",\n    \"firstname\": \"{{ $json.name }}\",\n    \"phone\": \"{{ $json.phone }}\",\n    \"company\": \"{{ $json.company }}\",\n    \"hs_lead_status\": \"NEW\",\n    \"lead_score\": {{ $json.score }}\n  }\n}",
+        "options": {}
+      }
+    },
+    {
+      "id": "a108cb5b-ea38-4724-a8a4-8ccdd7684bab",
+      "name": "Is Auto Followup?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2240,
+        700
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "567b5458-5224-4d3b-9d15-b9bd774f6baf",
+              "leftValue": "={{ $('Search by Email').item.json.properties?.lifecyclestage }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "rightValue": "lead"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "184e0485-7625-4b5a-9a03-3f2055d901ad",
+      "name": "Update Contact",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        2460,
+        540
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.hubapi.com/crm/v3/objects/contacts/{{ $('Search by Email').item.json.id }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"properties\": {\n    \"lead_score\": {{ $json.score }},\n    \"hs_lead_status\": \"OPEN\"\n  }\n}",
+        "options": {}
+      }
+    },
+    {
+      "id": "78cf0ac4-553e-43df-896c-c29889403e8f",
+      "name": "Prepare Update Diff",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2460,
+        820
+      ],
+      "parameters": {
+        "jsCode": "const prev = $('Search by Email').item.json.properties || {};\nconst lead = $json;\nconst diff = ['phone', 'company'].filter(k => prev[k] && prev[k] !== lead[k])\n  .map(k => `${k}: ${prev[k]} → ${lead[k]}`);\nreturn [{ json: { ...lead, diff: diff.join('\\n') || 'no field changes' } }];"
+      }
+    },
+    {
+      "id": "f3a52b2c-014c-4095-8ef6-218449b12b78",
+      "name": "Notify Sales of Update",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        2700,
+        820
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"channel\": \"#leads-updates\",\n  \"text\": \"Existing contact {{ $json.email }} resubmitted:\\n{{ $json.diff }}\"\n}",
+        "options": {}
+      }
+    },
+    {
+      "id": "45f2221c-539c-4950-a48e-0655bf4c497f",
+      "name": "Tier Router",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        2700,
+        440
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "d9340ef7-3355-4f3a-9723-1af98aafa89b",
+                    "leftValue": "={{ $json.tier }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "hot"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "hot"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "e62c8226-4f27-4f8a-9c85-9d0653acdcb5",
+                    "leftValue": "={{ $json.tier }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "warm"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "warm"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "b677992c-3575-4e1d-b663-293386c7bf6e",
+                    "leftValue": "={{ $json.tier }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "cold"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "cold"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "6b59e649-7b47-4cfe-8950-fd668c81bacb",
+      "name": "First-Touch Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        3000,
+        180
+      ],
+      "parameters": {
+        "sendTo": "={{ $('Apply Rules Floor').item.json.email }}",
+        "subject": "=Thanks {{ $('Apply Rules Floor').item.json.name }} — let's talk",
+        "emailType": "text",
+        "message": "={{ $('Apply Rules Floor').item.json.aiMessage }}",
+        "options": {}
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "mockGmail0000001",
+          "name": "Gmail (mock)"
+        }
+      }
+    },
+    {
+      "id": "24466865-52d7-4dce-bf4a-be143639c89e",
+      "name": "Notify #leads-hot",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        3000,
+        380
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"channel\": \"#leads-hot\",\n  \"text\": \":fire: Hot lead {{ $('Apply Rules Floor').item.json.name }} ({{ $('Apply Rules Floor').item.json.score }})\",\n  \"blocks\": [{\"type\": \"actions\", \"elements\": [{\"type\": \"button\", \"text\": {\"type\": \"plain_text\", \"text\": \"Claim\"}, \"action_id\": \"claim_lead\"}]}]\n}",
+        "options": {}
+      }
+    },
+    {
+      "id": "15776109-2f68-444a-85bd-7dc41a1e69fe",
+      "name": "Notify #leads-queue",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.6,
+      "position": [
+        3000,
+        580
+      ],
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "#leads-queue"
+        },
+        "text": "=New warm lead: {{ $('Apply Rules Floor').item.json.name }} <{{ $('Apply Rules Floor').item.json.email }}> — score {{ $('Apply Rules Floor').item.json.score }}",
+        "otherOptions": {}
+      },
+      "credentials": {
+        "slackApi": {
+          "id": "mockSlack0000001",
+          "name": "Slack (mock)"
+        }
+      }
+    },
+    {
+      "id": "5d8d4fa7-956a-42dc-8666-1f34c3999d68",
+      "name": "Cold Lead",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        3000,
+        780
+      ],
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "1MOCK-leads-sheet-id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Cold"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "mockGSheets00001",
+          "name": "Google Sheets (mock)"
+        }
+      }
+    },
+    {
+      "id": "341874ea-528e-4919-94eb-c1932a73ed06",
+      "name": "Note Capture",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        160,
+        470
+      ],
+      "parameters": {
+        "content": "## Capture & Normalize\nWeb Form + Facebook Lead Ads\nUnified lead structure + trims\nCRM Sync\n- GoHighLevel: n8n-nodes-base.highLevel\n- Close.io: n8n-nodes-base.httpRequest",
+        "width": 360,
+        "height": 200,
+        "color": 3
+      }
+    },
+    {
+      "id": "8a6ea9fc-9ba5-41a4-b913-49cafe12b7a8",
+      "name": "Note Validate",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        440,
+        720
+      ],
+      "parameters": {
+        "content": "## Validate & Dedup\nEmail + name non-empty check\nSearch HubSpot by email → check duplicate\nSubmission fields: name/email/phone/record\nDuplicate submission → log only, no action",
+        "width": 400,
+        "height": 200,
+        "color": 4
+      }
+    },
+    {
+      "id": "a691569d-067e-4ede-986e-4b04d65f2211",
+      "name": "Note AI",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        880,
+        720
+      ],
+      "parameters": {
+        "content": "## AI + Rules Score\nGPT-4o: output score/text/reason/message\nFloor rule: corp email + budget + long msg\nTry/catch fallback: warm / 50+",
+        "width": 420,
+        "height": 200,
+        "color": 5
+      }
+    },
+    {
+      "id": "2b0d59cd-3546-4cc4-ad31-baeba7684dfa",
+      "name": "Note CRM",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2220,
+        980
+      ],
+      "parameters": {
+        "content": "## CRM + Outreach + Notify\nNew contacts:\n- Hot: First-Touch Email + HubSpot + Notify #leads-hot (Claim button)\n- Warm: HubSpot + Notify #leads-queue",
+        "width": 560,
+        "height": 200,
+        "color": 7
+      }
+    }
+  ],
+  "connections": {
+    "Form Lead In": {
+      "main": [
+        [
+          {
+            "node": "Scoring Rules (edit here)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scoring Rules (edit here)": {
+      "main": [
+        [
+          {
+            "node": "Normalize (Web)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize (Web)": {
+      "main": [
+        [
+          {
+            "node": "Validate Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Lead": {
+      "main": [
+        [
+          {
+            "node": "Log Incomplete Lead",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ask for Details",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Search by Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search by Email": {
+      "main": [
+        [
+          {
+            "node": "Is Duplicate?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Duplicate?": {
+      "main": [
+        [
+          {
+            "node": "Log Duplicate Lead",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Score Lead (LLM)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Score Lead (LLM)": {
+      "main": [
+        [
+          {
+            "node": "Parse Score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Score": {
+      "main": [
+        [
+          {
+            "node": "Apply Rules Floor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apply Rules Floor": {
+      "main": [
+        [
+          {
+            "node": "Is New Contact?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is New Contact?": {
+      "main": [
+        [
+          {
+            "node": "Create Contact",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is Auto Followup?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Auto Followup?": {
+      "main": [
+        [
+          {
+            "node": "Update Contact",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Update Diff",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Update Diff": {
+      "main": [
+        [
+          {
+            "node": "Notify Sales of Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Contact": {
+      "main": [
+        [
+          {
+            "node": "Tier Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Contact": {
+      "main": [
+        [
+          {
+            "node": "Tier Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tier Router": {
+      "main": [
+        [
+          {
+            "node": "First-Touch Email",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Notify #leads-hot",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notify #leads-queue",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Cold Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {
+    "Form Lead In": [
+      {
+        "json": {
+          "headers": {
+            "content-type": "application/json"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "name": "Alex Chen",
+            "email": "alex.chen@acme-corp.com",
+            "phone": "+1 415 555 0142",
+            "company": "Acme Corp",
+            "budget": 30000,
+            "source": "web_form",
+            "message": "We need to automate lead routing for 3 sales teams, ~2k leads/month. Looking to start next month."
+          }
+        }
+      }
+    ],
+    "Log Incomplete Lead": [
+      {
+        "json": {
+          "row_number": 12,
+          "name": "Alex Chen",
+          "email": "",
+          "reason": "missing_email"
+        }
+      }
+    ],
+    "Ask for Details": [
+      {
+        "json": {
+          "id": "18c2f0mock01",
+          "threadId": "18c2f0mock01",
+          "labelIds": [
+            "SENT"
+          ]
+        }
+      }
+    ],
+    "Search by Email": [
+      {
+        "json": {
+          "id": "",
+          "total": 0
+        }
+      }
+    ],
+    "Log Duplicate Lead": [
+      {
+        "json": {
+          "row_number": 48,
+          "email": "alex.chen@acme-corp.com",
+          "reason": "duplicate_submission"
+        }
+      }
+    ],
+    "Score Lead (LLM)": [
+      {
+        "json": {
+          "index": 0,
+          "finish_reason": "stop",
+          "message": {
+            "role": "assistant",
+            "content": {
+              "score": 86,
+              "tier": "hot",
+              "reason": "Corporate domain, clear budget ($30k), concrete use case and timeline.",
+              "message": "Hi Alex, thanks for reaching out about automating lead routing for your sales teams..."
+            }
+          }
+        }
+      }
+    ],
+    "Create Contact": [
+      {
+        "json": {
+          "id": "90210001",
+          "properties": {
+            "email": "alex.chen@acme-corp.com",
+            "lead_score": "86"
+          },
+          "tier": "hot"
+        }
+      }
+    ],
+    "Update Contact": [
+      {
+        "json": {
+          "id": "90210001",
+          "updatedAt": "2026-10-30T08:00:00Z",
+          "tier": "warm"
+        }
+      }
+    ],
+    "Notify Sales of Update": [
+      {
+        "json": {
+          "ok": true,
+          "channel": "C0MOCKUPD",
+          "ts": "1793347200.000100"
+        }
+      }
+    ],
+    "First-Touch Email": [
+      {
+        "json": {
+          "id": "18c2f0mock02",
+          "threadId": "18c2f0mock02",
+          "labelIds": [
+            "SENT"
+          ]
+        }
+      }
+    ],
+    "Notify #leads-hot": [
+      {
+        "json": {
+          "ok": true,
+          "channel": "C0MOCKHOT",
+          "ts": "1793347200.000200"
+        }
+      }
+    ],
+    "Notify #leads-queue": [
+      {
+        "json": {
+          "ok": true,
+          "channel": "C0MOCKQUE",
+          "ts": "1793347200.000300"
+        }
+      }
+    ],
+    "Cold Lead": [
+      {
+        "json": {
+          "row_number": 203,
+          "email": "alex.chen@acme-corp.com",
+          "score": 32,
+          "tier": "cold"
+        }
+      }
+    ]
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": []
+}
